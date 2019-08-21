@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {recipes} from './tempList'
 import axios from 'axios'
 // Componentes
@@ -11,19 +10,39 @@ export default class App extends Component {
 
   state = {
     recipes : recipes,
+    url : 'https://www.food2fork.com/api/search?key=613c47518f2bcaf69924608051d67611',
+    base_url : 'https://www.food2fork.com/api/search?key=613c47518f2bcaf69924608051d67611',
     details_id : 35383,
-    index : 0
+    index : 0, 
+    search : '',
+    query : '&q=',
+    error : false
   }
   
   getData = async () => {
-    await axios.get('https://www.food2fork.com/api/search?key=613c47518f2bcaf69924608051d67611')
-      .then((response) => this.setState({recipes : response.data.recipes}))
+    this.setState({error : false})
+    await axios.get(this.state.url)
+      .then((response) => {
+        this.setState({recipes : response.data.recipes})
+        if (response.data.recipes.length === 0) {
+           this.setState({error : true}) }
+      })
       .catch((error) => console.log(error))
   }
 
+  componentDidMount() {
+    this.getData()
+  }
 
   handlePages = () => {
-    if (!this.state.index) return <RecipeList recipes={this.state.recipes} handleDetails={this.handleDetails}/>
+    if (!this.state.index) return <RecipeList 
+    recipes={this.state.recipes} 
+    handleDetails={this.handleDetails}
+    handleChange={this.handleChange}  
+    handleSubmit={this.handleSubmit}
+    value={this.state.search}
+    error={this.state.error}
+    />
     else return <RecipeDetails id={this.state.details_id} handleIndex={this.handleIndex}/>
   }
 
@@ -36,11 +55,26 @@ export default class App extends Component {
     this.setState({details_id : id})
   }
 
+  handleChange = (e) => {
+    this.setState({
+      search : e.target.value
+    }) 
+  }
+
+  handleSubmit= (e) => {
+    e.preventDefault()
+    const {base_url, query, search} = this.state
+
+    this.setState({
+      url : `${base_url}${query}${search}`,
+      search : ''
+    }, () => this.getData())
+  }
+
   render() {
     return (
       <React.Fragment>
       {this.handlePages()}
-        <button className='btn btn-primary' onClick={this.getData}> API Call </button>
       </React.Fragment>
     );
   }
